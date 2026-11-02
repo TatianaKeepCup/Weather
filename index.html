@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Weather">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#14172b">
+<title>Weather</title>
+<style>
+  :root { --bg:#14172b; --card:#1f2340; --text:#f2f3fa; --muted:#9aa0c3; --yes:#ffd479; --no:#8fe0b5; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:linear-gradient(180deg,#14172b,#2a2f5a); color:var(--text);
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+         padding:max(24px,env(safe-area-inset-top)) 20px max(24px,env(safe-area-inset-bottom)); }
+  main { max-width:480px; margin:0 auto; }
+  .place { color:var(--muted); font-size:15px; }
+  .temp { font-size:88px; font-weight:200; line-height:1; margin:6px 0; }
+  .cond { font-size:20px; }
+  .feels { color:var(--muted); font-size:15px; margin-top:4px; }
+  .cards { display:grid; gap:14px; margin-top:28px; }
+  .card { background:var(--card); border-radius:20px; padding:18px 20px; }
+  .card h2 { margin:0; font-size:15px; font-weight:500; color:var(--muted); }
+  .answer { font-size:34px; font-weight:600; margin:6px 0 4px; }
+  .answer.yes { color:var(--yes); } .answer.no { color:var(--no); }
+  .why { font-size:15px; color:var(--muted); }
+  .foot { margin-top:22px; font-size:12px; color:var(--muted); text-align:center; }
+  button { background:none; border:0; color:var(--muted); text-decoration:underline; font-size:12px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="place" id="place">Finding you...</div>
+  <div class="temp" id="temp">--</div>
+  <div class="cond" id="cond"></div>
+  <div class="feels" id="feels"></div>
+
+  <div class="cards">
+    <div class="card"><h2>Raincoat?</h2><div class="answer" id="rainAns">--</div><div class="why" id="rainWhy"></div></div>
+    <div class="card"><h2>Layers?</h2><div class="answer" id="layerAns">--</div><div class="why" id="layerWhy"></div></div>
+  </div>
+  <div class="foot"><span id="updated"></span> <button id="refresh">Refresh</button> <button id="reloc">Reset location</button></div>
+</main>
+
+<script>
+// ---- Settings you can tweak ----
+const FALLBACK = { name: "Melbourne", lat: -37.8136, lon: 144.9631 };
+const WINDOW_HOURS = 12;        // how far ahead to look
+const RAIN_CHANCE = 30;         // % chance that triggers a raincoat
+const RAIN_MM = 1;              // mm in any hour that triggers a raincoat
+const LAYER_BELOW = 18;         // "feels like" under this (C) means layers
+const SWING = 8;                // temperature swing (C) that means layers
+
+const CODES = {0:"Clear",1:"Mostly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Fog",51:"Light drizzle",53:"Drizzle",55:"Heavy drizzle",
+  61:"Light rain",63:"Rain",65:"Heavy rain",80:"Showers",81:"Showers",82:"Heavy showers",95:"Thunderstorm",96:"Thunderstorm",99:"Thunderstorm"};
+const $ = id => document.getElementById(id);
+
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} return null; }
+
+function getPosition() {
+  return new Promise(resolve => {
+    const saved = store("loc");
+    if (saved) { try { return resolve(JSON.parse(saved)); } catch (e) {} }
+    if (!navigator.geolocation) return resolve(FALLBACK);
+    navigator.geolocation.getCurrentPosition(
+      p => { const loc = { name: "Your location", lat: p.coords.latitude, lon: p.coords.longitude }; store("loc", JSON.stringify(loc)); resolve(loc); },
+      () => resolve(FALLBACK), { timeout: 8000, maximumAge: 3600000 });
+  });
+}
+
+async function load() {
+  const loc = await getPosition();
+  $("place").textContent = loc.name;
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + loc.lat + "&longitude=" + loc.lon +
+    "&current=temperature_2m,apparent_temperature,weather_code" +
+    "&hourly=apparent_temperature,precipitation_probability,precipitation" +
+    "&timezone=auto&forecast_days=2";
+  try {
+    const d = await (await fetch(url)).json();
+    render(d);
+  } catch (e) {
+    $("cond").textContent = "Could not load weather. Check your connection and tap Refresh.";
+  }
+}
+
+function render(d) {
+  const c = d.current;
+  $("temp").textContent = Math.round(c.temperature_2m) + "°";
+  $("cond").textContent = CODES[c.weather_code] || "";
+  $("feels").textContent = "Feels like " + Math.round(c.apparent_temperature) + "°";
+
+  // Find the hourly index for the current hour, then take the next N hours.
+  const start = Math.max(0, d.hourly.time.findIndex(t => t >= c.time.slice(0, 13)));
+  const end = start + WINDOW_HOURS;
+  const prob = d.hourly.precipitation_probability.slice(start, end);
+  const mm = d.hourly.precipitation.slice(start, end);
+  const feel = d.hourly.apparent_temperature.slice(start, end);
+
+  const maxProb = Math.max(...prob), maxMm = Math.max(...mm);
+  const rain = maxProb >= RAIN_CHANCE || maxMm >= RAIN_MM;
+  $("rainAns").textContent = rain ? "Yes, bring it" : "Not needed";
+  $("rainAns").className = "answer " + (rain ? "yes" : "no");
+  $("rainWhy").textContent = "Up to " + maxProb + "% chance of rain in the next " + WINDOW_HOURS + " hours" + (maxMm > 0 ? ", up to " + maxMm.toFixed(1) + " mm in an hour." : ".");
+
+  const lo = Math.min(...feel), hi = Math.max(...feel);
+  const layers = lo < LAYER_BELOW || (hi - lo) >= SWING;
+  $("layerAns").textContent = layers ? "Yes, pack a layer" : "Not needed";
+  $("layerAns").className = "answer " + (layers ? "yes" : "no");
+  $("layerWhy").textContent = "Feels like " + Math.round(lo) + "° to " + Math.round(hi) + "° over the next " + WINDOW_HOURS + " hours.";
+
+  $("updated").textContent = "Updated " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + ".";
+}
+
+$("refresh").onclick = load;
+$("reloc").onclick = () => { store("loc", null); load(); };
+document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+load();
+</script>
+</body>
+</html>
