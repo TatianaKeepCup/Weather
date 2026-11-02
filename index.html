@@ -22,10 +22,18 @@
   * { box-sizing:border-box; }
   html { background:var(--bg1); }
   body { margin:0; min-height:100vh; color:var(--text); font-family:var(--body-font);
-         background:linear-gradient(180deg,var(--bg1),var(--bg2)) fixed;
+         background:transparent;
          padding:max(22px,env(safe-area-inset-top)) 18px max(28px,env(safe-area-inset-bottom));
-         transition:background .6s; }
-  main { max-width:480px; margin:0 auto; }
+         }
+  main { max-width:480px; margin:0 auto; position:relative; z-index:1; }
+  #bg { position:fixed; inset:0; z-index:-1; background:linear-gradient(120deg,var(--bg1),var(--bg2),var(--bg1)); background-size:300% 300%; animation:drift 28s ease-in-out infinite; }
+  #fx { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  .star { position:absolute; border-radius:50%; background:#fff; box-shadow:0 0 6px #d9c8ff; opacity:.1; animation:twinkle 9s ease-in-out infinite; }
+  .drop { position:absolute; top:0; width:2px; height:16px; border-radius:2px; background:var(--drop); opacity:0; animation:fall 3s linear infinite; }
+  @keyframes drift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+  @keyframes twinkle { 0%,100%{opacity:.1; transform:scale(.7)} 50%{opacity:1; transform:scale(1.2)} }
+  @keyframes fall { 0%{transform:translateY(-30px); opacity:0} 15%{opacity:.8} 100%{transform:translateY(105vh); opacity:0} }
+  @media (prefers-reduced-motion: reduce) { #bg, .star, .drop { animation:none !important; } .drop { display:none; } .star { opacity:.6; } }
   .place { color:var(--muted); font-size:15px; font-weight:600; letter-spacing:.02em; }
   .hero { display:flex; align-items:flex-end; justify-content:space-between; }
   .temp { font-family:var(--display-font); font-size:92px; font-weight:300; line-height:1; margin:4px 0 2px; }
@@ -77,6 +85,8 @@
 </style>
 </head>
 <body>
+<div id="bg"></div>
+<div id="fx"></div>
 <main>
   <div class="place" id="place">Finding you...</div>
   <div class="hero">
@@ -157,11 +167,31 @@ function phaseOf(nowStr, sunriseStr, sunsetStr) {
   return "day";
 }
 
+let fxKind = "";
+function setFx(kind) {
+  if (kind === fxKind) return;
+  fxKind = kind;
+  const r = (a, b) => a + Math.random() * (b - a);
+  let h = "";
+  if (kind === "stars") {
+    for (let i = 0; i < 26; i++) {
+      const sz = r(2, 4.5).toFixed(1);
+      h += '<span class="star" style="left:' + r(0, 98).toFixed(1) + '%;top:' + r(0, 98).toFixed(1) + '%;width:' + sz + 'px;height:' + sz + 'px;animation-duration:' + r(8, 13).toFixed(1) + 's;animation-delay:-' + r(0, 12).toFixed(1) + 's"></span>';
+    }
+  } else if (kind === "rain") {
+    for (let i = 0; i < 18; i++) {
+      h += '<span class="drop" style="left:' + r(0, 98).toFixed(1) + '%;animation-duration:' + r(2.2, 3.8).toFixed(1) + 's;animation-delay:-' + r(0, 4).toFixed(1) + 's"></span>';
+    }
+  }
+  $("fx").innerHTML = h;
+}
+
 function applyTheme(phase, kind) {
   const p = PALETTES[phase][kind], light = p[2] === 1, r = document.documentElement.style;
   r.setProperty("--bg1", p[0]); r.setProperty("--bg2", p[1]);
   r.setProperty("--text", light ? "#fbf4ff" : "#43304a");
   r.setProperty("--muted", light ? "#d3c6ea" : "#7a6683");
+  r.setProperty("--drop", light ? "rgba(255,255,255,.4)" : "rgba(110,140,200,.5)");
   r.setProperty("--card", light ? "rgba(255,255,255,.13)" : "rgba(255,255,255,.58)");
   const serif = (phase === "dawn" || phase === "dusk");
   r.setProperty("--display-font", serif ? '"Fraunces",Georgia,serif' : '"Quicksand",ui-rounded,-apple-system,sans-serif');
@@ -237,7 +267,9 @@ function render(d) {
   const hourNow = parseInt(c.time.slice(11, 13), 10);
   const phase = phaseOf(c.time, day.sunrise[0], day.sunset[0]);
   const night = phase === "night";
-  applyTheme(phase, weatherKind(c.weather_code));
+  const wkind = weatherKind(c.weather_code);
+  applyTheme(phase, wkind);
+  setFx((wkind === "rain" || wkind === "storm") ? "rain" : (night ? "stars" : ""));
 
   $("temp").textContent = Math.round(c.temperature_2m) + "°";
   $("cond").textContent = CODES[c.weather_code] || "";
