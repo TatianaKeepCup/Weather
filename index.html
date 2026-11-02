@@ -52,6 +52,7 @@
   .row .range span { color:var(--muted); font-weight:500; }
 
   .foot { margin-top:22px; font-size:12px; color:var(--muted); text-align:center; line-height:1.9; }
+  a { color:var(--text); font-weight:600; }
   button { background:none; border:0; color:var(--muted); text-decoration:underline; font:inherit; font-size:12px; padding:2px 6px; }
 </style>
 </head>
@@ -73,6 +74,7 @@
   <div class="foot">
     <div id="updated"></div>
     <div><button id="refresh">Refresh</button><button id="reloc">Reset location</button></div>
+    <div><a id="bomLink" href="https://www.bom.gov.au/" target="_blank" rel="noopener">Official BoM forecast</a></div>
     <div>Forecast data: Open-Meteo, which combines national weather service models.</div>
   </div>
 </main>
@@ -153,6 +155,7 @@ function getPosition() {
 async function load() {
   const loc = await getPosition();
   $("place").textContent = loc.name;
+  $("bomLink").href = loc.name === "Melbourne" ? "https://www.bom.gov.au/vic/forecasts/melbourne.shtml" : "https://www.bom.gov.au/";
   const url = "https://api.open-meteo.com/v1/forecast?latitude=" + loc.lat + "&longitude=" + loc.lon +
     "&current=temperature_2m,apparent_temperature,weather_code" +
     "&hourly=apparent_temperature,precipitation_probability,precipitation" +
