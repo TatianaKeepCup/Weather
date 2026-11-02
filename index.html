@@ -123,7 +123,6 @@ const RAIN_CHANCE = 30;         // % chance that triggers a raincoat
 const RAIN_MM = 1;              // mm in any single hour that triggers a raincoat
 const LAYER_BELOW = 18;         // "feels like" under this (C) means layers
 const SWING = 8;                // temperature swing (C) that means layers
-const TOMORROW_FIRST_FROM = 20; // from this hour (8pm), Tomorrow moves to the top
 const DAY_START = 7, DAY_END = 21; // hours used for tomorrow (7am to 9pm)
 
 const CODES = {0:"Clear",1:"Mostly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Fog",51:"Light drizzle",53:"Drizzle",55:"Heavy drizzle",
@@ -281,7 +280,10 @@ function render(d) {
   const s0 = Math.max(0, h.time.findIndex(t => t >= nowKey));
   let e0 = h.time.indexOf(day.time[0] + "T" + String(DAY_END).padStart(2, "0") + ":00") + 1;
   if (e0 - s0 < 3) e0 = s0 + 3;
-  const today = advice(h, s0, e0);
+  // Before 5am, Today means the coming day, so look at its daytime (7am to 9pm)
+  const earlyHours = hourNow < 5;
+  const sT = earlyHours ? Math.max(0, h.time.indexOf(day.time[0] + "T" + String(DAY_START).padStart(2, "0") + ":00")) : s0;
+  const today = advice(h, sT, e0);
 
   // Tomorrow: 7am to 9pm
   const s1 = h.time.indexOf(day.time[1] + "T" + String(DAY_START).padStart(2, "0") + ":00");
@@ -289,7 +291,7 @@ function render(d) {
   const tomorrow = s1 >= 0 ? advice(h, s1, e1) : null;
 
   const todaySec = '<div class="section"><h2>Today</h2><div class="sub">' +
-    (hourNow >= DAY_END - 3 ? "The next few hours" : "From now until 9pm") + '</div>' + tiles(today) + '</div>';
+    (earlyHours ? "7am to 9pm" : hourNow >= DAY_END - 3 ? "The next few hours" : "From now until 9pm") + '</div>' + tiles(today) + '</div>';
   const tomSec = '<div class="section"><h2>Tomorrow</h2><div class="sub">' +
     (CODES[day.weather_code[1]] || "") + ", " + Math.round(day.temperature_2m_min[1]) + "° to " + Math.round(day.temperature_2m_max[1]) + "° · 7am to 9pm" + '</div>' + tiles(tomorrow) + '</div>';
   // Breakdown: next 24 hours, scrolls sideways
@@ -305,8 +307,14 @@ function render(d) {
   const bdSec = '<div class="section"><div class="bd-head" data-toggle role="button" tabindex="0" aria-expanded="' + bdOpen + '"><div><h2>Breakdown</h2><div class="sub">Next 24 hours, swipe sideways. Feels like temperature and rain chance.</div></div>' + CHEV + '</div>' +
     '<div class="bd-panel' + (bdOpen ? " open" : "") + '" id="bdPanel"><div class="hours">' + cols + '</div></div></div>';
 
-  const tomorrowFirst = hourNow >= TOMORROW_FIRST_FROM;
-  $("sections").innerHTML = (tomorrowFirst ? tomSec : todaySec) + bdSec + (tomorrowFirst ? todaySec : tomSec);
+  // Order of sections by time of day (minutes after midnight)
+  const mins = hourNow * 60 + parseInt(c.time.slice(14, 16), 10);
+  let order;
+  if (mins >= 20 * 60) order = [tomSec, bdSec, todaySec];            // 8pm to midnight
+  else if (mins >= 15.5 * 60) order = [todaySec, bdSec, tomSec];     // 3:30pm to 8pm
+  else if (mins >= 9.5 * 60) order = [bdSec, todaySec, tomSec];      // 9:30am to 3:30pm
+  else order = [todaySec, bdSec, tomSec];                            // midnight to 9:30am
+  $("sections").innerHTML = order.join("");
 
   // 7 day forecast
   let rows = "";
