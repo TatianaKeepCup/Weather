@@ -49,38 +49,28 @@
   .app:active:not(.empty) { transform:scale(.97); }
   .app[role="button"] { cursor:pointer; }
 
-  .water { margin-top:14px; background:var(--card); border-radius:22px; padding:14px 16px; }
-  .water[hidden] { display:none; }
-  .water .wlabel { font-size:13px; font-weight:600; color:var(--muted); margin-bottom:8px; }
-  .wrow { display:flex; align-items:center; gap:16px; }
-  .ring { position:relative; width:88px; height:88px; flex:none; }
-  .ring svg { transform:rotate(-90deg); display:block; }
-  .ring .track { stroke:var(--muted); opacity:.25; }
-  .ring .arc { stroke:#d4537e; transition:stroke-dashoffset .5s ease-out; }
-  .wct { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .wct .wn { font-size:20px; font-weight:700; line-height:1.1; }
-  .wct .wg { font-size:11px; color:var(--muted); font-weight:600; }
-  .wdrop { position:absolute; left:40px; top:-6px; width:9px; height:13px; background:#d4537e; border-radius:50% 50% 50% 50%/60% 60% 40% 40%; opacity:0; pointer-events:none; }
-  .wrip { position:absolute; left:29px; top:29px; width:30px; height:30px; border-radius:50%; border:1.5px solid #d4537e; opacity:0; pointer-events:none; }
-  .wdrop.go { animation:wfall .55s ease-in; }
-  .wrip.go { animation:wrip .6s .4s ease-out; }
-  .wn.pop { animation:wpop .35s ease-out; }
-  @keyframes wfall { 0%{opacity:0; transform:translateY(0)} 15%{opacity:1} 80%{opacity:1; transform:translateY(44px)} 100%{opacity:0; transform:translateY(52px) scale(.3)} }
+  .wtile { position:relative; overflow:hidden; user-select:none; -webkit-user-select:none; }
+  .wmini { display:block; height:3px; border-radius:2px; background:rgba(122,102,131,.25); margin:6px 8px 0; }
+  .wmini span { display:block; height:100%; border-radius:2px; background:#d4537e; width:0; transition:width .5s ease-out; }
+  .wdrop { position:absolute; left:calc(50% - 4px); top:-4px; width:8px; height:11px; background:#d4537e; border-radius:50% 50% 50% 50%/60% 60% 40% 40%; opacity:0; pointer-events:none; }
+  .wrip { position:absolute; left:calc(50% - 14px); top:12px; width:28px; height:28px; border-radius:50%; border:1.5px solid #d4537e; opacity:0; pointer-events:none; }
+  .wdrop.go { animation:wfall .5s ease-in; }
+  .wrip.go { animation:wrip .6s .3s ease-out; }
+  .wtile .ai.pop { animation:wpop .35s .3s ease-out; }
+  @keyframes wfall { 0%{opacity:0; transform:translateY(0)} 15%{opacity:1} 80%{opacity:1; transform:translateY(20px)} 100%{opacity:0; transform:translateY(26px) scale(.3)} }
   @keyframes wrip { 0%{opacity:.7; transform:scale(.3)} 100%{opacity:0; transform:scale(1.6)} }
-  @keyframes wpop { 0%{transform:scale(1)} 40%{transform:scale(1.18)} 100%{transform:scale(1)} }
-  @media (prefers-reduced-motion: reduce) { .wdrop.go, .wrip.go, .wn.pop { animation:none; } .ring .arc { transition:none; } }
-  .wbtns { flex:1; display:flex; flex-direction:column; gap:8px; }
-  .wbtn { width:100%; padding:10px 12px; border-radius:12px; font-size:15px; font-weight:600; text-decoration:none; color:var(--text); background:rgba(255,255,255,.55); border:1px solid rgba(122,102,131,.25); cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .wbtn.main { background:#d4537e; color:#fff; border:0; }
-  .wbtn:active { transform:scale(.98); }
-  .wweek { margin-top:12px; border-top:1px solid rgba(122,102,131,.2); padding-top:8px; }
-  .wweek summary { cursor:pointer; font-size:13px; font-weight:600; color:var(--muted); }
+  @keyframes wpop { 0%{transform:scale(1)} 40%{transform:scale(1.25)} 100%{transform:scale(1)} }
+  @media (prefers-reduced-motion: reduce) { .wdrop.go, .wrip.go, .wtile .ai.pop { animation:none; } .wmini span { transition:none; } }
+  .wk { margin-top:14px; }
+  .wk summary { cursor:pointer; font-size:13px; font-weight:600; color:var(--muted); padding:4px 0; }
   .wbars { display:flex; gap:6px; align-items:flex-end; height:76px; margin-top:12px; }
   .wbars > div { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:3px; height:100%; }
   .wbars .wb { width:100%; border-radius:4px 4px 0 0; background:rgba(212,83,126,.35); }
   .wbars .wb.today { background:#d4537e; }
   .wbars .wd { font-size:11px; color:var(--muted); font-weight:600; }
   .wbars .wv { font-size:11px; font-weight:600; }
+  .wundo { display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:13px; color:var(--muted); font-weight:600; }
+  .wbtn { padding:8px 14px; border-radius:12px; font-size:13px; font-weight:600; text-decoration:none; color:var(--text); background:rgba(255,255,255,.55); border:1px solid rgba(122,102,131,.25); cursor:pointer; }
 
   .section { margin-top:26px; }
   .section h2 { margin:0 0 2px; font-size:20px; font-weight:700; }
@@ -136,30 +126,17 @@
     <a class="app" href="shortcuts://run-shortcut?name=Tram"><span class="ai">🚋</span><span class="an">Tram</span></a>
     <a class="app" href="shortcuts://run-shortcut?name=Health"><span class="ai">🩷</span><span class="an">Health</span></a>
     <a class="app" href="shortcuts://run-shortcut?name=Upcoming%20Classes"><span class="ai">🧘</span><span class="an">Classes</span></a>
-    <div class="app" id="waterTile" role="button" tabindex="0" aria-controls="waterCard"><span class="ai">💧</span><span class="an" id="waterTileText">0 / 3 L</span></div>
-  </div>
-
-  <div class="water" id="waterCard">
-    <div class="wlabel">Water today</div>
-    <div class="wrow">
-      <div class="ring">
-        <svg width="88" height="88" viewBox="0 0 96 96" aria-hidden="true">
-          <circle class="track" cx="48" cy="48" r="40" fill="none" stroke-width="8"/>
-          <circle class="arc" id="wArc" cx="48" cy="48" r="40" fill="none" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
-        </svg>
-        <span class="wdrop" id="wDrop"></span><span class="wrip" id="wRip"></span>
-        <div class="wct"><span class="wn" id="wNum">0 L</span><span class="wg" id="wGoal">of 3 L</span></div>
-      </div>
-      <div class="wbtns">
-        <button class="wbtn main" id="wAdd" type="button">+1 refill</button>
-        <button class="wbtn" id="wSub" type="button">-1</button>
-      </div>
-    </div>
-    <details class="wweek"><summary>This week</summary><div class="wbars" id="wBars"></div></details>
+    <div class="app wtile" id="waterTile" role="button" tabindex="0" aria-label="Log one water refill"><span class="wdrop" id="wDrop"></span><span class="wrip" id="wRip"></span><span class="ai">💧</span><span class="an" id="waterTileText">0 / 3 L</span><span class="wmini"><span id="wMini"></span></span></div>
   </div>
 
   <div id="sections"></div>
   <div class="week" id="week" hidden><h3>Next 7 days</h3><div id="weekRows"></div></div>
+
+  <details class="week wk" id="waterWeek">
+    <summary>Water this week</summary>
+    <div class="wbars" id="wBars"></div>
+    <div class="wundo"><span id="wTodayTxt"></span><button class="wbtn" id="wSub" type="button">-1 today</button></div>
+  </details>
 
   <div class="foot">
     <div id="updated"></div>
@@ -401,10 +378,9 @@ const litres = n => Number((n * BOTTLE_L).toFixed(1));
 
 function drawWater() {
   const data = waterData(), n = data[dayKey()] || 0, L = litres(n);
-  $("wArc").style.strokeDashoffset = 251.3 * (1 - Math.min(L / WATER_GOAL_L, 1));
-  $("wNum").textContent = L + " L";
-  $("wGoal").textContent = "of " + WATER_GOAL_L + " L";
   $("waterTileText").textContent = L + " / " + WATER_GOAL_L + " L";
+  $("wMini").style.width = Math.min(L / WATER_GOAL_L, 1) * 100 + "%";
+  $("wTodayTxt").textContent = n + (n === 1 ? " refill today" : " refills today");
   const days = [];
   for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(d); }
   const top = Math.max(WATER_GOAL_L, ...days.map(d => litres(data[dayKey(d)] || 0)));
@@ -416,21 +392,19 @@ function drawWater() {
 }
 function play(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 
-$("wAdd").onclick = () => {
+function addRefill() {
   const data = waterData(), k = dayKey();
   data[k] = (data[k] || 0) + 1;
   waterSave(data); drawWater();
-  play($("wDrop"), "go"); play($("wRip"), "go"); play($("wNum"), "pop");
+  play($("wDrop"), "go"); play($("wRip"), "go"); play($("waterTile").querySelector(".ai"), "pop");
   if (LOG_TO_HEALTH) setTimeout(() => { location.href = "shortcuts://run-shortcut?name=" + encodeURIComponent(WATER_SHORTCUT); }, 1000);
-};
+}
+$("waterTile").onclick = addRefill;
+$("waterTile").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); addRefill(); } };
 $("wSub").onclick = () => {
   const data = waterData(), k = dayKey();
   if ((data[k] || 0) > 0) { data[k]--; waterSave(data); drawWater(); }
 };
-function setWaterOpen(open) { $("waterCard").hidden = !open; $("waterTile").setAttribute("aria-expanded", open); store("waterOpen", open ? "1" : "0"); }
-$("waterTile").onclick = () => setWaterOpen($("waterCard").hidden);
-$("waterTile").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setWaterOpen($("waterCard").hidden); } };
-setWaterOpen(store("waterOpen") !== "0");
 document.addEventListener("visibilitychange", () => { if (!document.hidden) drawWater(); });
 drawWater();
 
